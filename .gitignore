@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller build outputs
+build/
+dist/
+*.spec
+
+# Archive files
+*.zip
+
+# Virtual Environment (ถ้ามี)
+venv/
+.venv/
+env/
