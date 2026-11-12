@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Easy Sarabun — แปลงเลขไทย/อารบิกออนไลน์ ไม่ต้องติดตั้ง (Keep Format)</title>
+  <meta name="description" content="แปลงตัวเลขอารบิกเป็นเลขไทย (0-9 ⇄ ๐-๙) ในไฟล์เอกสาร Word, PowerPoint, Excel, ODF, RTF, TXT โดยคงรูปแบบเดิม ประมวลผลในเบราว์เซอร์ 100% ไม่มีการอัปโหลดไฟล์ ไม่ต้องติดตั้งโปรแกรม" />
+  <meta name="keywords" content="แปลงเลขไทย, เลขไทย, เลขอารบิก, ตัวเลขอารบิก, ไทยเป็นอารบิก, อารบิกเป็นไทย, ไทย 123, ไทย ๐-๙, แปลงเอกสาร, keep format, word แปลงเลข, easy sarabun" />
+  <meta name="author" content="terngz" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0f1110" />
+
+  <!-- Open Graph / social sharing -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Easy Sarabun — แปลงเลขไทย/อารบิกออนไลน์ (Keep Format)" />
+  <meta property="og:description" content="แปลงเลข 0-9 ⇄ ๐-๙ ในไฟล์เอกสารโดยคงรูปแบบเดิม ไม่ต้องติดตั้ง ไม่มีการอัปโหลดไฟล์ ปลอดภัย 100%" />
+  <meta property="og:site_name" content="Easy Sarabun" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Easy Sarabun — แปลงเลขไทย/อารบิกออนไลน์" />
+  <meta name="twitter:description" content="แปลงเลขในไฟล์เอกสารโดยคงรูปแบบเดิม ประมวลผลในเบราว์เซอร์" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- JSZip for zip-based formats (docx/pptx/xlsx/odt/...) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- Structural data for search engines / AI crawlers -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Easy Sarabun Web",
+    "alternateName": "Easy Sarabun",
+    "url": "https://easy-sarabun.pages.dev/",
+    "description": "แปลงตัวเลขอารบิก/ไทย (0-9 ⇄ ๐-๙) ในไฟล์เอกสารโดยคงรูปแบบเดิม ประมวลผลในเบราว์เซอร์โดยไม่มีการอัปโหลดไฟล์",
+    "applicationCategory": "UtilityApplication",
+    "operatingSystem": "Any (Web)",
+    "browserRequirements": "Requires JavaScript",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "inLanguage": "th",
+    "featureList": [
+      "แปลงเลขอารบิกเป็นไทยและไทยเป็นอารบิก",
+      "คงรูปแบบเอกสารเดิม (Keep Format)",
+      "รองรับ Word, PowerPoint, Excel, ODF, RTF, TXT",
+      "ประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดไฟล์",
+      "ไม่ต้องติดตั้งโปรแกรม"
+    ]
+  }
+  </script>
+  <!-- Breadcrumb -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Easy Sarabun", "item": "https://easy-sarabun.pages.dev/" }
+    ]
+  }
+  </script>
+  <!-- FAQPage structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "ต้องติดตั้งโปรแกรมไหม?",
+        "acceptedAnswer": { "@type": "Answer", "text": "ไม่ต้องครับ เว็บนี้แปลงไฟล์ได้ออนไลน์ในเบราว์เซอร์โดยไม่ต้องติดตั้งอะไร" }
+      },
+      {
+        "@type": "Question",
+        "name": "ไฟล์ของฉันถูกอัปโหลดหรือส่งไปที่ไหนไหม?",
+        "acceptedAnswer": { "@type": "Answer", "text": "ไม่มีการอัปโหลดเลยครับ ทุกอย่างถูกประมวลผลในเครื่องของคุณเอง ไฟล์ไม่หลุดออกจากเบราว์เซอร์" }
+      },
+      {
+        "@type": "Question",
+        "name": "รองรับไฟล์ประเภทไหนบ้าง?",
+        "acceptedAnswer": { "@type": "Answer", "text": "รองรับไฟล์ Word (.docx .docm), PowerPoint (.pptx .pptm), Excel (.xlsx .xlsm), ODF (.odt .ods .odp), RTF, TXT, CSV, Markdown, และ HTML" }
+      },
+      {
+        "@type": "Question",
+        "name": "การแปลงจะคงรูปแบบเอกสารเดิมไหม?",
+        "acceptedAnswer": { "@type": "Answer", "text": "คงรูปแบบเดิมครับ เฉพาะตัวเลขเท่านั้นที่เปลี่ยน ฟอนต์ สี ขนาด การจัดรูปแบบคงไว้เหมือนเดิม" }
+      },
+      {
+        "@type": "Question",
+        "name": "มีเวอร์ชันเดสก์ท็อปสำหรับ Windows ไหม?",
+        "acceptedAnswer": { "@type": "Answer", "text": "มีครับ มีฟีเจอร์เพิ่มเติม เช่น แปลงข้อความที่ไฮไลต์ใน Microsoft Word และแปลงจากคลิปบอร์ด ดาวน์โหลดได้จากหน้า Releases บน GitHub" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <img src="../assets/icon.png" alt="Easy Sarabun" class="logo" width="44" height="44"
+             onerror="this.style.display='none'" />
+        <div>
+          <h1 class="brand-title">Easy Sarabun</h1>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a class="btn btn-kofi" href="https://ko-fi.com/Y8I2292JV2" target="_blank" rel="noopener">เลี้ยงกาแฟ ☕</a>
+      </div>
+    </header>
+
+    <p class="subtitle">แปลงเลขไทย ⇄ อารบิก โดยคงฟอร์แมตเดิม</p>
+
+    <!-- โหมดการแปลง (ตาม UI เดิม main.py) -->
+    <section class="mode-card">
+      <p class="mode-label">โหมดการแปลง</p>
+      <div class="mode-row" role="group" aria-label="ทิศทางการแปลง">
+        <span id="mode-from" class="mode-side active">อารบิก ➔ ไทย</span>
+        <label class="switch">
+          <input type="checkbox" id="mode-reverse" aria-label="สลับทิศทางการแปลง" />
+          <span class="slider"></span>
+        </label>
+        <span id="mode-to" class="mode-side">ไทย ➔ อารบิก</span>
+      </div>
+      <p id="mode-example" class="mode-example">1 2 3 → ๑ ๒ ๓</p>
+    </section>
+
+    <!-- ไฟล์เอกสาร: ลากวาง / คลิกเลือก (ตาม UI เดิม main.py) -->
+    <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="เลือกไฟล์เอกสาร">
+      <p class="dropzone-title">ลากไฟล์เอกสารมาวางที่นี่</p>
+      <p class="dropzone-hint">Word · PowerPoint · Excel · ODF · RTF · TXT</p>
+      <p class="dropzone-sub">หรือคลิกเพื่อเลือกไฟล์ (ได้หลายไฟล์)</p>
+      <input type="file" id="file-input" accept=".docx,.docm,.pptx,.pptm,.xlsx,.xlsm,.odt,.ods,.odp,.rtf,.txt,.md,.csv,.html,.htm" multiple hidden />
+    </div>
+
+    <!-- Files queue -->
+    <ul id="file-list" class="file-list"></ul>
+
+    <!-- Convert button -->
+    <div class="actions">
+      <button id="convert-btn" class="btn btn-primary" disabled>แปลงไฟล์</button>
+      <button id="clear-btn" class="btn btn-ghost">ล้างทั้งหมด</button>
+    </div>
+
+    <footer class="statusbar">
+      <span id="status" class="status status-info" role="status" aria-live="polite">เลือกไฟล์เพื่อเริ่มแปลง</span>
+    </footer>
+
+    <!-- วิธีใช้ / FAQ -->
+    <section class="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title" class="faq-title">วิธีใช้ และคำถามที่พบบ่อย</h2>
+
+      <div class="faq-item">
+        <p class="faq-q">วิธีใช้: แปลงไฟล์เอกสารยังไง?</p>
+        <div class="faq-a" id="faq-howto">
+          <p>แปลงได้ 3 ขั้นตอนง่าย ๆ:</p>
+          <ul>
+            <li>ลากไฟล์มาวางที่ช่อง หรือคลิกเลือกไฟล์ (หลายไฟล์ได้)</li>
+            <li>เลือกโหมดการแปลง: อารบิก ➔ ไทย หรือ ไทย ➔ อารบิก</li>
+            <li>กดปุ่ม "แปลงไฟล์" แล้วไฟล์ที่แปลงแล้วจะถูกดาวน์โหลดอัตโนมัติ</li>
+          </ul>
+          <p>ไฟล์ต้นฉบับจะไม่ถูกแก้ไข และไฟล์ใหม่จะถูกสร้างข้าง ๆ โดยมีคำว่า "_thai" หรือ "_arabic" ต่อท้ายชื่อ</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">ต้องติดตั้งโปรแกรมไหม?</p>
+        <div class="faq-a" id="faq-install">
+          <p>ไม่ต้องครับ เว็บนี้แปลงไฟล์ได้ออนไลน์ในเบราว์เซอร์ ใช้ได้ทันทีโดยไม่ต้องติดตั้งอะไร และใช้ได้ทั้งบนคอมพิวเตอร์ แท็บเล็ต และมือถือ</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">ไฟล์ของฉันถูกอัปโหลดหรือส่งไปที่ไหนไหม? ปลอดภัยไหม?</p>
+        <div class="faq-a" id="faq-privacy">
+          <p>ปลอดภัย 100% ครับ ไฟล์ของคุณจะถูกประมวลผลในเครื่องของคุณเองภายในเบราว์เซอร์เท่านั้น <strong>ไม่มีการอัปโหลด</strong> ไปยังเซิร์ฟเวอร์ใด ๆ เลย</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">รองรับไฟล์ประเภทไหนบ้าง?</p>
+        <div class="faq-a" id="faq-formats">
+          <p>รองรับเอกสารยอดนิยมหลากหลายชนิด:</p>
+          <ul>
+            <li><strong>Word:</strong> .docx, .docm</li>
+            <li><strong>PowerPoint:</strong> .pptx, .pptm</li>
+            <li><strong>Excel:</strong> .xlsx, .xlsm</li>
+            <li><strong>ODF:</strong> .odt, .ods, .odp</li>
+            <li><strong>อื่น ๆ:</strong> .rtf, .txt, .md, .csv, .html</li>
+          </ul>
+          <p>หมายเหตุ: ไฟล์รูปแบบเก่าแบบ .doc / .xls / .ppt (ไบนารี) ไม่รองรับบนเว็บ ให้แปลงเป็น .docx ก่อน หรือใช้เวอร์ชันเดสก์ท็อป</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">การแปลงจะคงรูปแบบเอกสารเดิมไหม?</p>
+        <div class="faq-a" id="faq-format">
+          <p>คงรูปแบบเดิมครับ เฉพาะตัวเลขเท่านั้นที่ถูกเปลี่ยน (0-9 ⇄ ๐-๙) ฟอนต์ สี ขนาด การจัดหน้า การเว้นวรรค ฯลฯ คงไว้เหมือนเดิมทุกอย่าง</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">อยากได้ฟีเจอร์แปลงข้อความที่ไฮไลต์ใน Word / จากคลิปบอร์ด</p>
+        <div class="faq-a" id="faq-desktop">
+          <p>ฟีเจอร์แปลงข้อความที่ไฮไลต์ใน Microsoft Word และแปลงจากคลิปบอร์ด มีให้ใช้งานใน <strong>เวอร์ชันเดสก์ท็อปสำหรับ Windows</strong> เท่านั้น (เพราะต้องเข้าถึงระบบคลิปบอร์ดและ Word โดยตรง) กดปุ่มดาวน์โหลดด้านล่างเพื่อติดตั้งครับ</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download CTA -->
+    <div class="footer-cta">
+      <h2 class="footer-cta-title">ต้องการฟีเจอร์เพิ่มเติม? ดาวน์โหลดเวอร์ชันเดสก์ท็อป</h2>
+      <p class="footer-cta-sub">แปลงข้อความที่ไฮไลต์ใน Word · แปลงจากคลิปบอร์ด · ใช้ร่วมกับ hotkey สำหรับ Windows</p>
+      <a id="download-btn" class="btn btn-primary" href="https://github.com/terngz/easy_sarabun/releases"
+         target="_blank" rel="noopener">ดาวน์โหลด Easy Sarabun (for Windows)</a>
+    </div>
+
+  </div>
+
+  <script src="engine.js"></script>
+  <script src="web.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

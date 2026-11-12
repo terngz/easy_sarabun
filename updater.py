@@ -109,23 +109,33 @@ def download_and_apply(update: dict) -> bool:
 
         current_exe = Path(sys.executable or sys.argv[0]).resolve()
         bat = temp_dir / f"easy_sarabun_apply_{os.getpid()}.bat"
-        
-        # เขียน Batch script เพื่อรอให้แอปปัจจุบันปิดตัว แล้วย้าย exe ใหม่ไปทับ
+
+        # เขียน Batch script: รอให้แอปปิด (จำกัดรอบ ไม่วนไม่รู้จบ) แล้วคัดลอกใหม่ทับพร้อมตรวจผล
+        # ใช้ self-restart flag เพื่อกันแอปใหม่เปิดขึ้นมาแล้วทำ update ซ้ำ
+        marker = bat.with_suffix(".flag")
         bat.write_text(
             "@echo off\r\n"
+            "setlocal\r\n"
+            "set /a tries=0\r\n"
             ":wait\r\n"
             f'tasklist /FI "IMAGENAME eq {current_exe.name}" 2>nul | find /I "{current_exe.name}" >nul\r\n'
-            "if %errorlevel%==0 (\r\n"
-            "  timeout /t 1 /nobreak >nul\r\n"
-            "  goto wait\r\n"
-            ")\r\n"
+            "if not %errorlevel%==0 goto replace\r\n"
+            "set /a tries+=1\r\n"
+            "if %tries% geq 60 goto replace\r\n"   # ~60 วินาทีสูงสุด กรณี process ยังไม่ยอมตาย
+            "timeout /t 1 /nobreak >nul\r\n"
+            "goto wait\r\n"
+            ":replace\r\n"
             f'copy /y "{new_exe_path}" "{current_exe}" >nul\r\n'
-            f'start "" "{current_exe}"\r\n'
-            f'del "{new_exe_path}" >nul 2>&1\r\n'
-            f'del "{bat}"\r\n',
+            "if %errorlevel%==0 (\r\n"
+            f'  echo done > "{marker}"\r\n'
+            f'  start "" /d "{current_exe.parent}" "{current_exe.name}"\r\n'
+            f'  del "{new_exe_path}" >nul 2>&1\r\n'
+            ")\r\n"
+            f'del "{bat}" >nul 2>&1\r\n'
+            "exit /b 0\r\n",
             encoding="utf-8",
         )
-        
+
         subprocess.Popen(
             ["cmd", "/c", str(bat)],
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "DETACHED_PROCESS", 0),

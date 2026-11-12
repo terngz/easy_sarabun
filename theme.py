@@ -10,14 +10,15 @@ import tkinter.font as tkfont
 import customtkinter as ctk
 
 # ───────────── Color tokens ─────────────
-ACCENT = ("#2f6f62", "#4a9a8a")
-ACCENT_HOVER = ("#265a50", "#3d8374")
-SURFACE = ("#f5f5f3", "#262626")      # พื้นการ์ด / ปุ่มรอง
-BORDER = ("#dcdcd8", "#3b3b3b")
-TEXT = ("#1f1f1f", "#ececec")
-MUTED = ("#6a6862", "#9b9993")
-SUCCESS = ("#2f7d4f", "#5fbf86")
-DANGER = ("#c0392b", "#e67e73")
+# โทนเขียว mix: ลึก (deep) ใน light mode / สว่างสด (bright) ใน dark mode
+ACCENT = ("#1F6B57", "#34D399")
+ACCENT_HOVER = ("#1A5A49", "#2BB584")
+SURFACE = ("#F4F5F2", "#171A18")       # พื้นการ์ด / ปุ่มรอง
+BORDER = ("#D9DDD5", "#2D3330")
+TEXT = ("#18211C", "#F1F5F2")
+MUTED = ("#5F6B63", "#A6B0AA")
+SUCCESS = ("#2F7D4F", "#5FBF86")
+DANGER = ("#C0392B", "#E67E73")
 KOFI = "#78756c"
 KOFI_HOVER = "#66635b"
 
@@ -35,7 +36,10 @@ class Fonts:
     @classmethod
     def detect(cls, root) -> None:
         families = set(tkfont.families(root))
-        if "Mitr" in families:
+        if "Kanit" in families:
+            cls.regular = "Kanit"
+            cls.medium = "Kanit Medium" if "Kanit Medium" in families else "Kanit"
+        elif "Mitr" in families:  # เผื่อมี Mitr (โฉมเดิม) เป็น fallback ลำดับถัดไป
             cls.regular = "Mitr"
             cls.medium = "Mitr Medium" if "Mitr Medium" in families else "Mitr"
 

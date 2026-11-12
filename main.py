@@ -9,8 +9,7 @@ import threading
 import time
 import webbrowser
 from pathlib import Path
-from tkinter import filedialog, messagebox
-from tkinter import font as tkfont
+from tkinter import PhotoImage, filedialog, messagebox
 
 import customtkinter as ctk
 from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -38,10 +37,14 @@ from engine import get_converter
 from file_handler import FILETYPES, SUPPORTED, process_file
 from hotkey import HotkeyManager, combo_from_tk_event, format_combo
 import updater
+from theme import (
+    ACCENT, ACCENT_HOVER, SURFACE, BORDER, TEXT, MUTED,
+    SUCCESS, DANGER, KOFI, KOFI_HOVER, Fonts, font as theme_font,
+)
 
 # ───────────────────────── Constants ─────────────────────────
 APP_NAME = "Easy Sarabun"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 COPYRIGHT = "© 2026 Konnext Group, All Rights Reserved."
 RIGHTS = "Free to Use"
 GITHUB_URL = "https://github.com/terngz/easy_sarabun"
@@ -49,17 +52,8 @@ KOFI_URL = "https://ko-fi.com/Y8I2292JV2"
 DEFAULT_HOTKEY = "ctrl+shift+t"
 CONFIG_PATH = Path(os.getenv("APPDATA", Path.home())) / "EasySarabun" / "config.json"
 
+# โทนสี / ฟอนต์ กำหนดจาก theme.py เพียงที่เดียว แล้วทุกหน้าจอตามกัน (ดู DESIGN.md)
 # (light, dark)
-ACCENT = ("#2f6f62", "#4a9a8a")
-ACCENT_HOVER = ("#265a50", "#3d8374")
-SURFACE = ("#f5f5f3", "#262626")
-BORDER = ("#dcdcd8", "#3b3b3b")
-MUTED = ("#77756f", "#9b9993")
-TEXT = ("#1f1f1f", "#ececec")
-OK = ("#2f7d4f", "#5fbf86")
-ERR = ("#c0392b", "#e67e73")
-KOFI_COLOR = "#78756c"
-KOFI_HOVER = "#66635b"
 
 SRC_ARABIC, SRC_THAI = "0123456789", "๐๑๒๓๔๕๖๗๘๙"
 VK_C, VK_V = 0x43, 0x56
@@ -259,24 +253,40 @@ def replace_in_word_selection(reverse: bool) -> bool:
         pythoncom.CoUninitialize()
 
 
-# ───────────────────────── About dialog ─────────────────────────
-class AboutDialog(ctk.CTkToplevel):
+# ───────────────────────── Settings dialog ─────────────────────────
+class SettingsDialog(ctk.CTkToplevel):
+    """หน้าต่างการตั้งค่า — เวอร์ชัน/อัปเดต, กาแฟ, ลิขสิทธิ์"""
+
     def __init__(self, app: "EasySarabunApp"):
         super().__init__(app)
-        self.title(f"About {APP_NAME}")
+        self.app = app
+        self.title(f"การตั้งค่า {APP_NAME}")
         self.resizable(False, False)
         self.transient(app)
         self.attributes("-topmost", True)
 
-        w, h = 360, 440
+        w, h = 360, 520
         x = app.winfo_x() + (app.winfo_width() - w) // 2
         y = app.winfo_y() + (app.winfo_height() - h) // 2
         self.geometry(f"{w}x{h}+{max(x, 0)}+{max(y, 0)}")
 
         f = app.font
-        ctk.CTkLabel(self, text=APP_NAME, font=f(26, True), text_color=ACCENT).pack(pady=(30, 0))
-        ctk.CTkLabel(self, text=f"เวอร์ชัน {APP_VERSION}", font=f(12), text_color=MUTED).pack(pady=(2, 14))
 
+        # ── ส่วนหัว: ชื่อ + เวอร์ชัน + ปุ่มอัปเดต ──
+        ctk.CTkLabel(self, text=APP_NAME, font=f(26, True), text_color=ACCENT).pack(pady=(28, 0))
+        ctk.CTkLabel(self, text=f"เวอร์ชัน {APP_VERSION}", font=f(12), text_color=MUTED).pack(pady=(2, 10))
+        # ปุ่มอัปเดตอยู่ใต้เลขเวอร์ชัน
+        self.btn_update = ctk.CTkButton(
+            self, text="ตรวจสอบอัปเดต", height=36, corner_radius=10, font=f(13),
+            fg_color="transparent", border_width=1, border_color=BORDER,
+            text_color=TEXT, hover_color=SURFACE, command=app.on_check_update,
+        )
+        self.btn_update.pack(padx=40, pady=(0, 4))
+        # ป้ายสถานะอัปเดต — อยู่ที่หน้านี้ (ไม่รบกวนหน้าโปรแกรมหลัก)
+        self.lbl_update_status = ctk.CTkLabel(self, text="", font=f(11), text_color=MUTED)
+        self.lbl_update_status.pack(padx=40, pady=(0, 2))
+
+        # ── ส่วนคำอธิบาย/กาแฟ ──
         ctk.CTkLabel(
             self,
             text=(
@@ -285,27 +295,29 @@ class AboutDialog(ctk.CTkToplevel):
                 "โดยคงรูปแบบเดิมไว้ทั้งหมด\n(เฉพาะการลากไฟล์วางแปลงทั้งไฟล์)\n"
             ),
             font=f(13), text_color=TEXT, justify="center",
-        ).pack(padx=24)
-
+        ).pack(padx=24, pady=(14, 0))
 
         ctk.CTkButton(
             self, text="☕  เลี้ยงกาแฟผมได้", height=42, corner_radius=10, font=f(14, True),
-            fg_color=KOFI_COLOR, hover_color=KOFI_HOVER, text_color="white",
+            fg_color=KOFI, hover_color=KOFI_HOVER, text_color="white",
             command=lambda: webbrowser.open(KOFI_URL),
-        ).pack(fill="x", padx=40)
+        ).pack(fill="x", padx=40, pady=(10, 0))
 
-        # ctk.CTkButton(
-        #     self, text="GitHub  ·  terngz/easy_sarabun", height=38, corner_radius=10, font=f(13),
-        #     fg_color="transparent", border_width=1, border_color=BORDER, text_color=TEXT,
-        #     hover_color=SURFACE, command=lambda: webbrowser.open(GITHUB_URL),
-        # ).pack(fill="x", padx=40, pady=(10, 0))
-        
-        ctk.CTkFrame(self, height=1, fg_color=BORDER).pack(fill="x", padx=40, pady=20)
+        ctk.CTkFrame(self, height=1, fg_color=BORDER).pack(fill="x", padx=40, pady=16)
 
         ctk.CTkLabel(self, text=COPYRIGHT, font=f(12), text_color=MUTED).pack()
-        ctk.CTkLabel(self, text=RIGHTS, font=f(12), text_color=MUTED).pack(pady=(0, 20))
+        ctk.CTkLabel(self, text=RIGHTS, font=f(12), text_color=MUTED).pack(pady=(0, 18))
 
         self.after(60, self._grab)
+
+    def set_update_status(self, text: str, kind: str = "info"):
+        """แสดงสถานะอัปเดตที่หน้านี้ (แทนที่จะไปโผล่หน้าโปรแกรมหลัก)"""
+        color = {"ok": SUCCESS, "err": DANGER}.get(kind, MUTED)
+        self.lbl_update_status.configure(text=text, text_color=color)
+
+    def _apply_result(self, ok: bool, update: dict):
+        """แสดงผลการดาวน์โหลดอัปเดต ภายในหน้าต่างตั้งค่านี้"""
+        self.app._apply_result(ok, update)
 
     def _grab(self):
         try:
@@ -321,13 +333,12 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
         super().__init__()
         self.TkdndVersion = TkinterDnD._require(self)
 
-        families = set(tkfont.families(self))
-        self.ff = "Mitr" if "Mitr" in families else "Tahoma"
-        self.ff_med = "Mitr Medium" if "Mitr Medium" in families else self.ff
+        Fonts.detect(self)  # จดจำฟอนต์ Kanit ที่ลงทะเบียนไว้ (theme.py)
 
         self.config_data = load_config()
         self.hotkey = self.config_data.get("hotkey", DEFAULT_HOTKEY)
         self.reverse_mode = bool(self.config_data.get("reverse", False))  # True: ๐-๙ ➔ 0-9
+        ctk.set_appearance_mode("Dark")  # ธีมมืดแบบตายตัว (ปิดฟีเจอร์เปลี่ยนธีม)
 
         self.title(APP_NAME)
         self.geometry("420x580")
@@ -335,11 +346,12 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.attributes("-topmost", True)
         self._set_app_icon()
 
-        self._about: AboutDialog | None = None
+        self._settings: SettingsDialog | None = None
         self._busy = threading.Lock()
         self._last_hwnd: int | None = None  # หน้าต่างล่าสุดที่ไม่ใช่โปรแกรมนี้
         self._recording = False
         self._update_checking = False
+        self._update_data: dict | None = None  # อัปเดตที่พบล่าสุด (สำหรับแถบแจ้งเตือน)
 
         self._build_ui()
         self._setup_dnd()
@@ -355,11 +367,21 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
     def _set_app_icon(self) -> None:
         """ตั้งไอคอนหน้าต่าง + ไอคอน Taskbar"""
+        # 1) iconbitmap + .ico — ใช้งานได้จริงทั้ง source และ PyInstaller (assets ถูก bundle แล้ว)
+        ico = None
         try:
             ico = resource_path("icon.ico")
             self.iconbitmap(str(ico))
         except Exception:
-            pass
+            ico = None
+        # 2) fallback/เสริม: iconphoto + PNG (กันบางกรณี iconbitmap ไม่เวิร์ก)
+        if ico is None:
+            try:
+                img = PhotoImage(file=str(resource_path("icon.png")), master=self)
+                self._iconimg = img  # กัน GC ลบรูป
+                self.iconphoto(True, img)
+            except Exception:
+                pass
         if HAS_WIN32:
             try:  # AppUserModelID -> ให้ Taskbar แสดง icon เดียวของ app (ไม่ใช่ python.exe)
                 win32com.client.Dispatch("Shell.Application")  # กัน COM init ภายหลัง
@@ -369,9 +391,8 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
     # ── fonts ──
     def font(self, size: int, bold: bool = False) -> ctk.CTkFont:
-        if bold and self.ff_med != self.ff:
-            return ctk.CTkFont(family=self.ff_med, size=size)
-        return ctk.CTkFont(family=self.ff, size=size, weight="bold" if bold else "normal")
+        """ขนาด/น้ำหนักจาก theme.py (ฟอนต์ Kanit)"""
+        return theme_font(size, bold)
 
     # ── UI ──
     def _build_ui(self):
@@ -381,17 +402,12 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=pad, pady=(20, 0))
         ctk.CTkLabel(header, text=APP_NAME, font=f(24, True), text_color=ACCENT).pack(side="left")
-        self.btn_update = ctk.CTkButton(
-            header, text="อัปเดต", width=66, height=28, corner_radius=14, font=f(12),
-            fg_color="transparent", border_width=1, border_color=BORDER,
-            text_color=TEXT, hover_color=SURFACE, command=self.on_check_update,
-        )
-        self.btn_update.pack(side="right", padx=(6, 6))
+        # ปุ่มเฟือง — เปิดหน้าต่างการตั้งค่า (About + อัปเดต + ธีม)
         ctk.CTkButton(
-            header, text="About", width=66, height=28, corner_radius=14, font=f(12),
+            header, text="⚙", width=34, height=28, corner_radius=14, font=f(14),
             fg_color="transparent", border_width=1, border_color=BORDER,
-            text_color=TEXT, hover_color=SURFACE, command=self.open_about,
-        ).pack(side="right")
+            text_color=TEXT, hover_color=SURFACE, command=self.open_settings,
+        ).pack(side="right", padx=(6, 6))
 
         ctk.CTkLabel(
             self, text="แปลงเลขไทย ⇄ อารบิก โดยคงฟอร์แมตเดิม",
@@ -465,6 +481,22 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
         )
         self.btn_hotkey.pack(side="left")
 
+        # แถบแจ้งเตือนอัปเดต (ซ่อนไว้ก่อน — จะโผล่ที่ตำแหน่งเดียวกับสถานะด้านล่างเมื่อพบเวอร์ชันใหม่)
+        self._update_banner = ctk.CTkFrame(self, fg_color=ACCENT, corner_radius=12)
+        self._update_banner.pack_forget()
+        _bn_inner = ctk.CTkFrame(self._update_banner, fg_color="transparent")
+        _bn_inner.pack(fill="x", padx=10, pady=8)
+        self._update_banner_label = ctk.CTkLabel(
+            _bn_inner, text="", font=f(11, True), text_color="white", justify="left", anchor="w",
+        )
+        self._update_banner_label.pack(side="left", fill="x", expand=True)
+        self._update_banner_btn = ctk.CTkButton(
+            _bn_inner, text="อัปเดต ↓", width=68, height=24, corner_radius=12,
+            font=f(11, True), fg_color="white", text_color=ACCENT,
+            hover_color="#d9efe7", command=self._download_update,
+        )
+        self._update_banner_btn.pack(side="left", padx=(8, 0))
+
         self.lbl_status = ctk.CTkLabel(self, text="พร้อมใช้งาน", font=f(11), text_color=MUTED)
         self.lbl_status.pack(side="bottom", pady=14)
 
@@ -475,7 +507,7 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.lbl_example.configure(text="๑๒๓  ➔  123" if rev else "123  ➔  ๑๒๓")
 
     def set_status(self, text: str, kind: str = "info"):
-        color = {"ok": OK, "err": ERR}.get(kind, MUTED)
+        color = {"ok": SUCCESS, "err": DANGER}.get(kind, MUTED)
         self.after(0, lambda: self.lbl_status.configure(text=text, text_color=color))
 
     def _save(self):
@@ -489,11 +521,11 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self._save()
         self.set_status("โหมด: ไทย ➔ อารบิก" if self.reverse_mode else "โหมด: อารบิก ➔ ไทย")
 
-    def open_about(self):
-        if self._about is not None and self._about.winfo_exists():
-            self._about.focus()
+    def open_settings(self):
+        if self._settings is not None and self._settings.winfo_exists():
+            self._settings.focus()
             return
-        self._about = AboutDialog(self)
+        self._settings = SettingsDialog(self)
 
     # ── เปลี่ยนคีย์ลัด ──
     def start_recording(self):
@@ -645,24 +677,42 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
         threading.Thread(target=self.convert_selection, args=(self._last_hwnd,), daemon=True).start()
 
     # ── อัปเดตเวอร์ชัน (GitHub Releases) ──
+    def _render_update_banner(self, show: bool):
+        """แสดง/ซ่อนแถบแจ้งเตือนอัปเดตตรงตำแหน่งเดียวกับสถานะด้านล่าง (ไม่ใช่ modal)"""
+        if show and self._update_data:
+            self._update_banner_label.configure(
+                text=f"ตรวจพบเวอร์ชันใหม่ {self._update_data['version']} (คุณใช้ {APP_VERSION})"
+            )
+            self._update_banner.pack(side="bottom", padx=28, pady=(0, 6), fill="x")
+            self._update_banner.lift()
+        else:
+            self._update_banner.pack_forget()
+
     def _check_update_bg(self):
-        """ตรวจสอบอัปเดตอัตโนมัติตอนเปิดแอป (เงียบ ๆ ไม่บังคับ)"""
+        """ตรวจสอบอัปเดตอัตโนมัติตอนเปิดแอป (เงียบ ๆ — ถ้าพบให้โชว์แถบแจ้งเตือน ไม่บังคับ)"""
         def work():
-            update = updater.check_for_update(APP_VERSION)
+            try:
+                update = updater.check_for_update(APP_VERSION)
+            except Exception:
+                update = None
             self.after(0, lambda: self._render_update_state(update, silent=True))
 
         threading.Thread(target=work, daemon=True).start()
 
     def on_check_update(self):
-        """ปุ่ม 'อัปเดต' — ตรวจสอบด้วยตนเอง"""
+        """ปุ่ม 'ตรวจสอบอัปเดต' ในหน้าต่างตั้งค่า — ตรวจสอบด้วยตนเอง"""
         if self._update_checking:
             return
         self._update_checking = True
-        self.btn_update.configure(text="กำลังตรวจ...")
-        self.set_status("กำลังตรวจสอบอัปเดต...")
+        if self._settings is not None and self._settings.winfo_exists():
+            self._settings.btn_update.configure(text="กำลังตรวจ...")
+            self._settings.set_update_status("กำลังตรวจสอบอัปเดต...", "info")
 
         def work():
-            update = updater.check_for_update(APP_VERSION)
+            try:
+                update = updater.check_for_update(APP_VERSION)
+            except Exception:
+                update = None
             self.after(0, lambda: self._render_update_state(update, silent=False))
 
         threading.Thread(target=work, daemon=True).start()
@@ -670,29 +720,38 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
     def _render_update_state(self, update, silent: bool):
         """แสดงผลการตรวจสอบอัปเดต update=None = ใช้เวอร์ชันล่าสุดแล้ว"""
         self._update_checking = False
-        self.btn_update.configure(text="อัปเดต")
+        if self._settings is not None and self._settings.winfo_exists():
+            self._settings.btn_update.configure(text="ตรวจสอบอัปเดต", text_color=TEXT)
         if update:
-            self._prompt_update(update)
+            self._update_data = update
+            self._render_update_banner(True)
+            # ผลการตรวจสอบไปแสดงที่หน้าต่างตั้งค่า ส่วนหน้าโปรแกรมหลักมีแค่แถบเตือน
+            if self._settings is not None and self._settings.winfo_exists():
+                self._settings.set_update_status(
+                    f"พบเวอร์ชันใหม่ {update['version']} — ดาวน์โหลดได้เลย", "ok"
+                )
+            else:
+                self.set_status(f"มีเวอร์ชันใหม่ {update['version']} — กด 'อัปเดต ↓'", "info")
         elif not silent:
-            self.set_status(f"คุณใช้เวอร์ชันล่าสุดแล้ว ({APP_VERSION})", "ok")
-            self.btn_update.configure(text_color=OK)
+            self._update_data = None
+            self._render_update_banner(False)
+            # "ใช้เวอร์ชันล่าสุดแล้ว" แสดงเฉพาะที่หน้าต่างตั้งค่า ไม่ขึ้นที่หน้าโปรแกรมหลัก
+            if self._settings is not None and self._settings.winfo_exists():
+                self._settings.set_update_status(f"คุณใช้เวอร์ชันล่าสุดแล้ว ({APP_VERSION})", "ok")
+            else:
+                self.set_status(f"คุณใช้เวอร์ชันล่าสุดแล้ว ({APP_VERSION})", "ok")
 
-    def _prompt_update(self, update: dict):
-        """ถามผู้ใช้ว่าจะอัปเดตหรือไม่ ถ้าตกลงให้ดาวน์โหลด + แทนที่เมื่อปิดแอป"""
-        notes = (update.get("notes") or "").strip()
-        msg = f"มีเวอร์ชันใหม่ {update['version']} พร้อมใช้งาน\n(คุณใช้เวอร์ชัน {APP_VERSION})"
-        if notes:
-            msg += f"\n\nบันทึกการเปลี่ยนแปลง:\n{notes[:800]}"
-        ans = messagebox.askyesno(
-            f"อัปเดต {APP_NAME}",
-            msg + "\n\nต้องการดาวน์โหลดและอัปเดตตอนนี้หรือไม่?",
-            parent=self,
-        )
-        if not ans:
-            self.set_status(f"มีเวอร์ชันใหม่ {update['version']} — ยังไม่อัปเดต", "info")
+    def _download_update(self):
+        """กดปุ่ม 'อัปเดต ↓' บนแถบแจ้งเตือน — ดาวน์โหลด + แทนที่เมื่อปิดแอป"""
+        update = self._update_data
+        if not update or self._update_checking:
             return
-        self.set_status("กำลังดาวน์โหลดอัปเดต...")
-        self.btn_update.configure(text="ดาวน์โหลด...")
+        self._update_checking = True
+        if self._settings is not None and self._settings.winfo_exists():
+            self._settings.btn_update.configure(text="ดาวน์โหลด...")
+            self._settings.set_update_status(f"กำลังดาวน์โหลดเวอร์ชัน {update['version']}...", "info")
+        else:
+            self.set_status(f"กำลังดาวน์โหลดเวอร์ชัน {update['version']}...")
 
         def work():
             ok = updater.download_and_apply(update)
@@ -701,9 +760,15 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
         threading.Thread(target=work, daemon=True).start()
 
     def _apply_result(self, ok: bool, update: dict):
-        self.btn_update.configure(text="อัปเดต")
+        self._update_checking = False
+        if self._settings is not None and self._settings.winfo_exists():
+            self._settings.btn_update.configure(text="ตรวจสอบอัปเดต", text_color=TEXT)
         if ok:
-            self.set_status(f"ดาวน์โหลดเวอร์ชัน {update['version']} แล้ว — ปิดแอปเพื่ออัปเดต", "ok")
+            self._render_update_banner(False)
+            if self._settings is not None and self._settings.winfo_exists():
+                self._settings.set_update_status(
+                    f"ดาวน์โหลดเวอร์ชัน {update['version']} แล้ว — ปิดแอปเพื่ออัปเดต", "ok"
+                )
             messagebox.showinfo(
                 APP_NAME,
                 f"ดาวน์โหลดเวอร์ชัน {update['version']} เรียบร้อย\n\n"
@@ -711,16 +776,30 @@ class EasySarabunApp(ctk.CTk, TkinterDnD.DnDWrapper):
                 parent=self,
             )
         else:
-            self.set_status("ดาวน์โหลดอัปเดตไม่สำเร็จ", "err")
+            if self._settings is not None and self._settings.winfo_exists():
+                self._settings.set_update_status("ดาวน์โหลดอัปเดตไม่สำเร็จ กรุณาลองใหม่อีกครั้ง", "err")
             messagebox.showerror(APP_NAME, "ดาวน์โหลดอัปเดตไม่สำเร็จ กรุณาลองใหม่อีกครั้ง", parent=self)
 
     def _on_close(self):
-        self.hotkeys.unregister()
-        self.destroy()
+        """ปิดแอป — บังคับให้ process จบทันที (กัน updater .bat รอค้าง ไม่คัดลอกไฟล์ใหม่ให้)"""
+        try:
+            self.hotkeys.unregister()
+        except Exception:
+            pass
+        try:
+            self.destroy()
+        except Exception:
+            pass
+        # หลัง window ปิด ให้ยุติ process ทันที ไม่ปล่อยให้ thread/after ค้าง ทำให้ .bat ของ updater
+        # (ที่รอ `tasklist` ว่า exe ตายแล้ว) ผ่านไปถึงขั้น `copy` ได้จริง
+        try:
+            os._exit(0)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
-    ctk.set_appearance_mode("System")
+    ctk.set_appearance_mode("Dark")
     ctk.set_default_color_theme("blue")
     register_fonts()
     EasySarabunApp().mainloop()
